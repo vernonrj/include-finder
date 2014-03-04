@@ -14,6 +14,7 @@ class Graph(Mapping):
         else:
             self._nodes = set()
         self._edges = {}
+
     def add_node(self, node):
         """
         add a node to the graph.
@@ -22,6 +23,7 @@ class Graph(Mapping):
         if node in self._nodes:
             raise KeyError("%s already in graph" % node)
         self._nodes.add(node)
+
     def remove_node(self, node):
         """
         remove a node from the graph.
@@ -34,16 +36,19 @@ class Graph(Mapping):
             # edges are only populated when connections are made,
             # so this is not an error
             pass
+
     @property
     def nodes(self):
         """return a list of nodes"""
         return list(self._nodes)
+
     def node_edges(self, node):
         """return a list of connections to node"""
         edges = self._edges.get(node)
         if not edges:
             edges = []
         return list(edges)
+
     def connect(self, node1, node2):
         """
         connect two nodes such that
@@ -59,12 +64,14 @@ class Graph(Mapping):
             edges = set()
         edges.add(node2)
         self._edges[node1] = edges
+
     def disconnect(self, node1, node2):
         """
         disconnect two nodes.
         Raises KeyError if the nodes aren't currently connected
         """
         self._edges[node1].remove(node2)
+
     def path_to(self, node1, node2):
         """
         return the path from node1 to node2.
@@ -78,22 +85,30 @@ class Graph(Mapping):
                 traces.append(backtrace[node])
                 node = backtrace[node]
             return list(reversed(traces))
-        backtrace = dict()
-        next_traverse = set([node1])
-        while True:
-            traversed = set(backtrace.keys())
-            edges = set()
-            for node in next_traverse:
-                new_edges = set(self.node_edges(node))
-                new_edges.difference_update(traversed)
-                for each in new_edges:
+        backtrace = dict()              # breadcrumbs
+        to_traverse = set([node1])      # nodes we haven't checked yet
+        traversed = set()               # nodes we've checked
+        # walk graph from node1, populating a backtrace until node2 is present
+        # in the backtrace (a path has been found)
+        while node2 not in traversed:
+            discovered = set()
+            for node in to_traverse:
+                # find all nodes connected to the current node that we
+                # haven't traversed yet
+                edges = set(self.node_edges(node)).difference(traversed)
+                for each in edges:
+                    # Add each connected node that we haven't seen yet
+                    # to the backtrace like so: {node: previous}
                     backtrace[each] = node
-                edges.update(new_edges)
-            if not edges:
+                discovered.update(edges)
+            if not discovered:
                 raise KeyError("%s not connected to %s" % (node1, node2))
-            if node2 in edges:
-                return trace_back(node1, node2, backtrace)
-            next_traverse = edges
+            # add discovered instead of to_traverse to traversed here.
+            # This simplifies the code a bit
+            traversed.update(discovered)
+            to_traverse = discovered
+        return trace_back(node1, node2, backtrace)
+
     def reverse(self):
         """
         Returns a new Graph with edge directions reversed
@@ -104,13 +119,16 @@ class Graph(Mapping):
             for val in values:
                 graph.connect(val, key)
         return graph
+
     def __getitem__(self, key):
         if key not in self.nodes:
             raise KeyError(key)
         else:
             return self.node_edges(key)
+
     def __iter__(self):
         return iter(self.nodes)
+
     def __len__(self):
         return len(self.nodes)
 
