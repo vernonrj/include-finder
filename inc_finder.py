@@ -9,14 +9,19 @@ from getopt import gnu_getopt, GetoptError
 import graph
 import includer
 
+# TODO: go in opposite direction
+# TODO: handle filename aliasing better
+# TODO: handle case-insensitive #includes
 
-def inc_finder(path, root_file):
+def inc_finder(path, root_file, reverse=False):
     """
     find all files included recursively by root_file
     """
     root_file = os.path.basename(root_file)
     # create a graph of includes to work with
     tree = build_include_tree(path)
+    if reverse:
+        tree = tree.reverse()
     # list of files included
     files = set()
     # files that haven't been checked yet.
@@ -86,19 +91,21 @@ def usage():
     print("Usage: %s [OPTION]... FILE" % sys.argv[0])
     print("show an include tree for a file")
     print("")
-    print("  -h, --help             display this help and exit")
-    print("  -i, --includes=FILE    return chain from file to include")
-    print("  -n, --norecurse        don't recursively find includes")
+    print("  -h, --help                 display this help and exit")
+    print("  -r, --reverse              show files included by FILE")
+    print("  -i, --includes=FILE        return chain from file to include")
+    print("  -n, --norecurse            don't recursively find includes")
 
 
 TO_FILE = None
+REVERSE = False
 RECURSIVE = True
 
 
 if __name__ == '__main__':
     try:
-        OPTS, ARGS = gnu_getopt(sys.argv[1:], "hi:n",
-                ["help", "includes", "norecurse"])
+        OPTS, ARGS = gnu_getopt(sys.argv[1:], "hri:n",
+                ["help", "includes", "reverse", "norecurse"])
     except GetoptError as err:
         print(str(err))
         usage()
@@ -109,20 +116,27 @@ if __name__ == '__main__':
             sys.exit()
         elif OPT in ('-i', '--includes'):
             TO_FILE = ARG
+        elif OPT in ('-r', '--reverse'):
+            REVERSE = True
         elif OPT in ('-n', '--norecurse'):
             RECURSIVE = False
         else:
             assert False, "unhandled option"
     if TO_FILE:
         TREE = build_include_tree('.')
+        if REVERSE:
+            TREE = TREE.reverse()
         for FILE in TREE.path_to(ARGS[0], TO_FILE):
             print(FILE)
     elif RECURSIVE:
-        INCS = inc_finder('.', ARGS[0])
+        INCS = inc_finder('.', ARGS[0], REVERSE)
         for FILE in INCS:
             print(FILE)
     else:
-        INCS = populate_includes('.')[ARGS[0]].includes
+        TREE = build_include_tree('.')
+        if REVERSE:
+            TREE = TREE.reverse()
+        INCS = TREE.node_edges(ARGS[0])
         INCS.sort()
         for FILE in INCS:
             print(FILE)

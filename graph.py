@@ -94,6 +94,16 @@ class Graph(Mapping):
             if node2 in edges:
                 return trace_back(node1, node2, backtrace)
             next_traverse = edges
+    def reverse(self):
+        """
+        Returns a new Graph with edge directions reversed
+        a --> b     <==>    b --> a
+        """
+        graph = Graph(self.nodes)
+        for key, values in self.iteritems():
+            for val in values:
+                graph.connect(val, key)
+        return graph
     def __getitem__(self, key):
         if key not in self.nodes:
             raise KeyError(key)
