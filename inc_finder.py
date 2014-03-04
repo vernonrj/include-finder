@@ -9,7 +9,6 @@ from getopt import gnu_getopt, GetoptError
 import graph
 import includer
 
-# TODO: go in opposite direction
 # TODO: handle filename aliasing better
 # TODO: handle case-insensitive #includes
 
@@ -95,17 +94,19 @@ def usage():
     print("  -r, --reverse              show files included by FILE")
     print("  -i, --includes=FILE        return chain from file to include")
     print("  -n, --norecurse            don't recursively find includes")
+    print("      --json                 print include tree in JSON format")
 
 
 TO_FILE = None
 REVERSE = False
 RECURSIVE = True
+PRINT_JSON = False
 
 
 if __name__ == '__main__':
     try:
-        OPTS, ARGS = gnu_getopt(sys.argv[1:], "hri:n",
-                ["help", "includes", "reverse", "norecurse"])
+        OPTS, ARGS = gnu_getopt(sys.argv[1:], "hi:jrn",
+                ["help", "includes", "json", "reverse", "norecurse"])
     except GetoptError as err:
         print(str(err))
         usage()
@@ -118,10 +119,24 @@ if __name__ == '__main__':
             TO_FILE = ARG
         elif OPT in ('-r', '--reverse'):
             REVERSE = True
+        elif OPT == '--json':
+            PRINT_JSON = True
         elif OPT in ('-n', '--norecurse'):
             RECURSIVE = False
         else:
             assert False, "unhandled option"
+    if PRINT_JSON:
+        import json
+        TREE = build_include_tree('.')
+        if REVERSE:
+            TREE = TREE.reverse()
+        print(json.dumps(dict(TREE),
+                         sort_keys=True,
+                         indent=2))
+        sys.exit(0)
+    if not ARGS:
+        usage()
+        raise Exception("no file given")
     if TO_FILE:
         TREE = build_include_tree('.')
         if REVERSE:
