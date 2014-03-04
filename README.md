@@ -1,15 +1,19 @@
-Include Finder finds include relationships for C/C++ source files. Running it on a file will print what files are included by that file, and what files are included by those files, and so on.
+Include Finder finds include relationships for C/C++ source files. Running it on a file will print what files are included by that file, and what files are included by those files, and so on. It runs on Python2.7 with no extra dependencies required. Take a C++ source file and a C++ header file as an example:
 
 ```C++
 // file.h
 #include <set>
 #include "otherstuff.h"
+
+/* ... */
 ```
 
 ```C++
 // file.cpp
 #include "file.h"
 #include <vector>
+
+/* ... */
 ```
 
 By default you'll see what headers the specified file is including recursively.
