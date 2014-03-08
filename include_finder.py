@@ -130,17 +130,15 @@ if __name__ == '__main__':
             assert False, "unhandled option"
     if PRINT_JSON:
         import json
-        TREE = build_include_tree('.')
-        if REVERSE:
-            TREE = TREE.reverse()
+        TREE = build_include_tree('.', REVERSE)
         print(json.dumps(dict(TREE),
                          sort_keys=True,
                          indent=2))
         sys.exit(0)
-    if not ARGS:
+    elif not ARGS:
         usage()
         raise Exception("no file given")
-    if TO_FILE or not RECURSIVE:
+    elif TO_FILE or not RECURSIVE:
         TREE = build_include_tree('.', REVERSE)
         if TO_FILE:
             FILES = TREE.path_to(ARGS[0], TO_FILE)
