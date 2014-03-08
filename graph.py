@@ -3,6 +3,8 @@ Graph data structure
 """
 from collections import Mapping
 
+import unittest
+
 class Graph(Mapping):
     """
     create a graph data structure
@@ -36,7 +38,11 @@ class Graph(Mapping):
             # edges are only populated when connections are made,
             # so this is not an error
             pass
-
+        for key in self.nodes:
+            try:
+                self._edges[key].remove(node)
+            except (KeyError, IndexError):
+                pass
     @property
     def nodes(self):
         """return a list of nodes"""
@@ -133,3 +139,51 @@ class Graph(Mapping):
         return len(self.nodes)
 
 
+# disable the 'too many class methods' from unittest.TestCase
+# pylint: disable=R0904
+
+class GraphTests(unittest.TestCase):
+    """tests for the Graph class"""
+    def test_mapping(self):
+        """test the mapping interface"""
+        graph = Graph(range(1, 4))
+        graph.connect(1, 2)
+        self.failUnless(graph[1] == [2])
+        graph.connect(2, 3)
+        self.failUnless(graph.items() == [(1, [2]), (2, [3]), (3, [])])
+    def test_path_to(self):
+        """test path_to method"""
+        graph = Graph(range(5))
+        for nodes in zip(range(1, 4), range(2, 5)):
+            graph.connect(nodes[0], nodes[1])
+        self.failUnless(graph.path_to(1, 4) == [1, 2, 3, 4])
+    def test_add_remove(self):
+        """test adding and removing"""
+        graph = Graph()
+        graph.add_node(1)
+        # Trying to connect to nonexistant node
+        self.assertRaises(KeyError, graph.connect, 1, 2)
+        self.assertRaises(KeyError, graph.connect, 2, 1)
+        # Connecting to a valid node
+        graph.add_node(2)
+        graph.connect(1, 2)
+        self.failUnless(graph[1] == [2])
+        # Removal behavior
+        graph.remove_node(2)
+        self.failUnless(graph[1] == [])
+        # Can't remove again
+        self.assertRaises(KeyError, graph.remove_node, 2)
+    def test_reverse(self):
+        """test the reverse method"""
+        graph = Graph(range(5))
+        for nodes in zip(range(1, 4), range(2, 5)):
+            graph.connect(nodes[0], nodes[1])
+        graph = graph.reverse()
+        self.failUnless(graph.path_to(4, 1) == [4, 3, 2, 1])
+
+
+
+if __name__ == '__main__':
+    unittest.main()
+
+# EOF

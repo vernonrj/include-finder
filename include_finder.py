@@ -43,7 +43,7 @@ def inc_finder(path, root_file, reverse=False):
     return files
 
 
-def build_include_tree(path):
+def build_include_tree(path, reverse=False):
     """build a graph of includes on path"""
     # Create a dictionary of files and their includes
     files = populate_includes(path)
@@ -54,7 +54,7 @@ def build_include_tree(path):
         # create it if an include structure doesn't exist for it
         node = files.get(each, None)
         if not node:
-            node = includer.Include(each)
+            node = includer.Include.from_file(each)
             tree.add_node(node)
         # connect files to their includes
         # add files to the graph if they aren't there already
@@ -63,6 +63,8 @@ def build_include_tree(path):
             if inc not in tree:
                 tree.add_node(inc)
             tree.connect(each, inc)
+    if reverse:
+        tree = tree.reverse()
     return tree
 
 
@@ -79,7 +81,7 @@ def populate_includes(path):
         file_list = [x for x in file_list if x.endswith(valid)]
         # build include structure for each file found
         for each in file_list:
-            sources[os.path.basename(each)] = includer.Include(each)
+            sources[os.path.basename(each)] = includer.Include.from_file(each)
     return sources
 
 
@@ -138,22 +140,17 @@ if __name__ == '__main__':
     if not ARGS:
         usage()
         raise Exception("no file given")
-    if TO_FILE:
-        TREE = build_include_tree('.')
-        if REVERSE:
-            TREE = TREE.reverse()
-        for FILE in TREE.path_to(ARGS[0], TO_FILE):
-            print(FILE)
-    elif RECURSIVE:
-        INCS = inc_finder('.', ARGS[0], REVERSE)
-        for FILE in INCS:
+    if TO_FILE or not RECURSIVE:
+        TREE = build_include_tree('.', REVERSE)
+        if TO_FILE:
+            FILES = TREE.path_to(ARGS[0], TO_FILE)
+        else:
+            FILES = TREE.node_edges(ARGS[0])
+            FILES.sort()
+        for FILE in FILES:
             print(FILE)
     else:
-        TREE = build_include_tree('.')
-        if REVERSE:
-            TREE = TREE.reverse()
-        INCS = TREE.node_edges(ARGS[0])
-        INCS.sort()
+        INCS = inc_finder('.', ARGS[0], REVERSE)
         for FILE in INCS:
             print(FILE)
 
